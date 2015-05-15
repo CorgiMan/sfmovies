@@ -2,25 +2,37 @@ package main
 
 import (
 	"fmt"
+	"log"
 
 	"github.com/CorgiMan/sfmovies"
 )
 
 func main() {
-	apidata, err := sfmovies.GetAndParseTable()
+	apidata, err := GetAndParseAPIData()
 	if err != nil {
-		fmt.Println(err)
-		return
+		log.Fatal(err)
+		panic(err)
 	}
-	err = apidata.WriteToDisc("apidata.json")
-	if err != nil {
-		fmt.Println(err)
-		return
-	}
+	// 	session.SetMode(mgo.Monotonic, true)
 
-	apidata2, err := sfmovies.ReadFromDisc("apidata.json")
+	sfmovies.StoreAPIData(apidata)
+
+	ad2, err := sfmovies.GetLatestAPIData()
 	if err != nil {
-		fmt.Println(err)
+		log.Fatal(err)
+		panic(err)
 	}
-	fmt.Println(apidata2)
+	fmt.Println(ad2)
+
+	// err = apidata.WriteToDisc("apidata.json")
+	// if err != nil {
+	// 	log.Panicln(err)
+	// }
+
+	// apidata2, err := sfmovies.ReadFromDisc("apidata.json")
+	// if err != nil {
+	// 	log.Panicln(err)
+	// }
+
+	// fmt.Println(apidata2)
 }

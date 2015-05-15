@@ -1,4 +1,4 @@
-package sfmovies
+package main
 
 import (
 	"encoding/csv"
@@ -7,52 +7,45 @@ import (
 	"fmt"
 	"hash/fnv"
 	"io/ioutil"
+	"log"
 	"net/http"
 	"strings"
-)
+	"time"
 
-const (
-	tableURL           = "https://data.sfgov.org/api/views/yitu-d5am/rows.csv?accessType=DOWNLOAD"
-	omdbURL            = "http://www.omdbapi.com/"
-	geocodingKey       = "AIzaSyA8Px3Nesn6PsDhA0DIppHX16OEDT85WfA"
-	geocodingURL       = "https://maps.googleapis.com/maps/api/geocode/json?address="
-	geocodingURLSuffix = ",+San+Francisco,+CA&key=" + geocodingKey
+	"github.com/CorgiMan/sfmovies"
 )
 
 // geocoding key in config file
 
-func GetAndParseTable() (*APIData, error) {
-	f, err := http.Get(tableURL)
+func GetAndParseAPIData() (*sfmovies.APIData, error) {
+	f, err := http.Get(sfmovies.TableURL)
 	if err != nil {
-		fmt.Println(err)
-		return nil, err
+		log.Fatal(err)
 	}
 
 	ad, err := ParseRows(csv.NewReader(f.Body))
 	return ad, err
 }
 
-func ParseRows(r *csv.Reader) (*APIData, error) {
-	ad := NewAPIData()
+func ParseRows(r *csv.Reader) (*sfmovies.APIData, error) {
+	ad := sfmovies.NewAPIData()
 
 	// skip line 1. It contains the field descriptions
 	_, err := r.Read()
 	if err != nil {
-		fmt.Println(err)
+		log.Println(err)
 		return nil, err
 	}
 
-	for i := 0; i < 1100; i++ {
-		fmt.Println(i)
+	for i := 0; i < 10; i++ {
 		fields, err := r.Read()
 		if err != nil {
-			fmt.Println(err)
 			break
 		}
 
 		movie, scene, err := ParseRow(fields)
 		if err != nil {
-			fmt.Println(err)
+			log.Println(err)
 			continue
 		}
 		if _, ok := ad.Movies[movie.IMDBID]; !ok {
@@ -62,23 +55,26 @@ func ParseRows(r *csv.Reader) (*APIData, error) {
 		hasher := fnv.New32()
 		bts, err := json.Marshal(scene)
 		if err != nil {
-			fmt.Println("Hashing error")
+			log.Println("Hashing error")
 			continue
 		}
 		_, err = hasher.Write(bts)
 		if err != nil {
-			fmt.Println("Hashing error")
+			log.Println("Hashing error")
 			continue
 		}
 		hash := fmt.Sprintf("%x", hasher.Sum32())
 		ad.Scenes[hash] = scene
 	}
+	ad.Time = time.Now()
+	fmt.Println(ad.Time)
+
 	return ad, nil
 }
 
-func ParseRow(record []string) (*Movie, *Scene, error) {
-	movie := new(Movie)
-	scene := new(Scene)
+func ParseRow(record []string) (*sfmovies.Movie, *sfmovies.Scene, error) {
+	movie := new(sfmovies.Movie)
+	scene := new(sfmovies.Scene)
 
 	if len(record) < 2 {
 		return movie, scene, errors.New("Not enough record fields")
@@ -96,21 +92,20 @@ func ParseRow(record []string) (*Movie, *Scene, error) {
 	}
 	location.Name = loc
 
-	scene = &Scene{movie.IMDBID, location}
+	scene = &sfmovies.Scene{movie.IMDBID, location}
 
 	return movie, scene, nil
 }
 
-func GeoEncoding(location string) (*Location, error) {
-	// mi := Movie{}
+func GeoEncoding(location string) (*sfmovies.Location, error) {
 	location = strings.Replace(location, " ", "+", -1)
-	r, _ := http.Get(geocodingURL + location + geocodingURLSuffix)
+	r, _ := http.Get(sfmovies.GeocodingURL + location + sfmovies.GeocodingURLSuffix)
 	jsonbts, _ := ioutil.ReadAll(r.Body)
 
 	response := struct {
 		Results []struct {
 			Geometry struct {
-				Location *Location `json: location`
+				Location *sfmovies.Location `json: location`
 			} `json: geometry`
 		} `json: results`
 	}{}
@@ -118,19 +113,19 @@ func GeoEncoding(location string) (*Location, error) {
 	_ = json.Unmarshal(jsonbts, &response)
 	rs := response.Results
 	if len(rs) > 1 {
-		fmt.Println("multiple geoencodings")
+		log.Println("multiple geoencodings")
 	}
 	if len(rs) == 0 {
-		fmt.Println("No results")
+		log.Println("No results")
 		return nil, errors.New("No geo encoding available")
 	}
 	return rs[0].Geometry.Location, nil
 }
 
-func GetOMDBMovieInfo(title string) (*Movie, error) {
-	mi := new(Movie)
+func GetOMDBMovieInfo(title string) (*sfmovies.Movie, error) {
+	mi := new(sfmovies.Movie)
 	title = strings.Replace(title, " ", "+", -1)
-	r, err := http.Get(omdbURL + "/?t=" + title)
+	r, err := http.Get(sfmovies.OmdbURL + "/?t=" + title)
 	if err != nil {
 		return mi, err
 	}

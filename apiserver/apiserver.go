@@ -25,32 +25,27 @@ var port = flag.String("port", "8080", "port that program listens on")
 var machine = flag.String("machine", "1", "port that program listens on")
 
 var ad *sfmovies.APIData
-var trie *sfmovies.TrieNode
+var trie *TrieNode
 var status = Status{}
-var nearQuerySize = 20
-var autoCompleteQuerySize = 10
-var host = "http://infty.nl:12000"
 
-var usage = struct {
-	Description string
-	Api         map[string]string
-}{
-	"sf movies api. Location and movie info of movies recorded in San Francisco",
-	map[string]string{
-		host + "/status":               "returns the status of the api server",
-		host + "/movies/imdb_id":       "movie info",
-		host + "/scenes/scene_id":      "movie info",
-		host + "/complete?term=###":    "Auto complete results for query",
-		host + "/search?q=###":         "Search for movie title, film location, release year, director, production company, distributer, writer and actors",
-		host + "/near?lat=###&lng=###": "Search for film locations near the presented gps coordinates",
-	},
-}
+var usage = strings.Replace(
+	`{
+  "api_description": "sf movies api. Location and movie info of movies recorded in San Francisco",
+  "api_examples": {
+    "{{.}}/status":               "returns the status of the api server that handled the request",
+    "{{.}}/movies/imdb_id":       "movie info",
+    "{{.}}/scenes/scene_id":      "movie info",
+    "{{.}}/complete?term=###":    "Auto complete results for query",
+    "{{.}}/search?q=###":         "Search for movie title, film location, release year, director, production company, distributer, writer and actors",
+    "{{.}}/near?lat=###&lng=###": "Search for film locations near the presented gps coordinates"
+  }
+}`, "{{.}}", sfmovies.HostName, -1)
 
 func init() {
 	flag.Parse()
 
 	var err error
-	ad, err = sfmovies.ReadFromDisc("apidata.json")
+	ad, err = sfmovies.GetLatestAPIData()
 	if err != nil {
 		fmt.Println(err)
 	}
@@ -60,7 +55,7 @@ func init() {
 	status.DataVersion = "1"
 	status.Running = true
 
-	trie = sfmovies.CreateTrie(ad)
+	trie = CreateTrie(ad)
 }
 
 //TODO: Cache movies and scenes
@@ -118,7 +113,7 @@ func nearHandler(w http.ResponseWriter, r *http.Request) {
 	}
 	result := make([]*sfmovies.Scene, 0)
 	// select the minimum distance, then remove them from arrays
-	for i := 0; i < nearQuerySize; i++ {
+	for i := 0; i < sfmovies.NearQuerySize; i++ {
 		ix := mini(ds)
 		if ix == -1 {
 			break
@@ -171,7 +166,7 @@ func searchHandler(w http.ResponseWriter, r *http.Request) {
 	// split q and intersect results
 	result := trie.Get(q)
 	if result == nil {
-		result = new(sfmovies.TrieResults)
+		result = new(TrieResults)
 	}
 	enc := NewEncoder(w)
 	err := enc.Encode(result)
@@ -181,7 +176,7 @@ func searchHandler(w http.ResponseWriter, r *http.Request) {
 }
 func completeHandler(w http.ResponseWriter, r *http.Request) {
 	q := r.FormValue("term")
-	results := trie.GetFrom(q, autoCompleteQuerySize)
+	results := trie.GetFrom(q, sfmovies.AutoCompleteQuerySize)
 	enc := NewEncoder(w)
 	err := enc.Encode(results)
 	if err != nil {
@@ -209,12 +204,12 @@ func rootHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	bts, err := json.MarshalIndent(usage, "", "  ")
-	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
-		return
-	}
-	_, err = w.Write(bts)
+	// bts, err := json.MarshalIndent(usage, "", "  ")
+	// if err != nil {
+	// 	http.Error(w, err.Error(), http.StatusInternalServerError)
+	// 	return
+	// }
+	_, err := io.WriteString(w, usage)
 
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)

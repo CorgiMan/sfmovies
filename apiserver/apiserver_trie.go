@@ -1,13 +1,15 @@
-package sfmovies
+package main
 
 import (
 	"strings"
 	"unicode"
+
+	"github.com/CorgiMan/sfmovies"
 )
 
 type TrieResults struct {
-	Movies []*Movie
-	Scenes []*Scene
+	Movies []*sfmovies.Movie
+	Scenes []*sfmovies.Scene
 }
 
 type TrieNode struct {
@@ -17,7 +19,7 @@ type TrieNode struct {
 	prev   *TrieNode
 }
 
-func CreateTrie(data *APIData) *TrieNode {
+func CreateTrie(data *sfmovies.APIData) *TrieNode {
 	root := NewTrieNode()
 	for _, movie := range data.Movies {
 		root.AddMovieFields(movie, movie)
@@ -40,7 +42,7 @@ func NewTrieNode() *TrieNode {
 	return tn
 }
 
-func (t *TrieNode) AddMovieFields(movie *Movie, eltToAdd interface{}) {
+func (t *TrieNode) AddMovieFields(movie *sfmovies.Movie, eltToAdd interface{}) {
 	t.AddMessyString(movie.Title, eltToAdd)
 	t.AddMessyString(movie.Year, eltToAdd)
 	t.AddMessyString(movie.Writer, eltToAdd)
@@ -69,8 +71,8 @@ func CleanString(str string) string {
 }
 
 func (t *TrieNode) Add(str string, elt interface{}) {
-	_, ismovie := elt.(*Movie)
-	_, isscene := elt.(*Scene)
+	_, ismovie := elt.(*sfmovies.Movie)
+	_, isscene := elt.(*sfmovies.Scene)
 	if !ismovie && !isscene {
 		return
 	}
@@ -80,10 +82,10 @@ func (t *TrieNode) Add(str string, elt interface{}) {
 
 func (t *TrieNode) AddClean(str string, elt interface{}) {
 	if len(str) == 0 {
-		if movie, ok := elt.(*Movie); ok {
+		if movie, ok := elt.(*sfmovies.Movie); ok {
 			t.result.Movies = append(t.result.Movies, movie)
 		}
-		if scene, ok := elt.(*Scene); ok {
+		if scene, ok := elt.(*sfmovies.Scene); ok {
 			t.result.Scenes = append(t.result.Scenes, scene)
 		}
 		return
