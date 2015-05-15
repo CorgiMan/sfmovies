@@ -1,0 +1,186 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <title> Uber San Francisco Movie Challange Api Demonstration </title>
+  <link rel="stylesheet" href="jquery-ui.css">
+  <script src="jquery.js"></script>
+  <script src="http://maps.googleapis.com/maps/api/js"> </script>
+  <script src="gmaps.js"></script>
+  <script src="jquery-ui.js"></script>
+  <link rel="stylesheet" href="style.css">
+  
+</head>
+<body>
+
+<h2>Uber San Francisco Movie Challange Api Demonstration</h2>
+<div>
+  <form id="from">
+    search: <input name="textbox" id="autocomplete">
+  </form>
+</div> 
+
+<br />
+
+<div id="bar1">
+  <div id="left">
+    <div id="map"> </div>
+  </div>
+  
+  <div id="right">
+    <div id="movieinfo"> </div>
+    <div id="movieposter"> </div>
+  </div>
+
+</div>
+
+<br />
+
+<div>
+  <div id="left">
+    <div id="movielist"></div>
+  </div>
+  <div id="right">  
+    <div id="scenelist"></div>
+  </div>
+</div>
+
+<script>
+
+$( "#autocomplete" ).autocomplete({
+  source:  function(request, response) {
+    $.ajax({
+      url: "http://localhost:8080/complete",
+      jsonp: "callback",
+      dataType: "jsonp",
+      data: {
+        term: request.term
+      },
+      success: function( data ) {
+        response( data );
+      }
+    })
+  }
+});
+
+var form = document.querySelector("form");
+form.addEventListener("submit", function(e) {
+  e.preventDefault();
+  display_search_results(form.textbox.value);
+});
+
+function display_search_results(q) {
+  $.ajax({
+    url: "http://localhost:8080/search?q=" + q,
+    jsonp: "callback",
+    dataType: "jsonp",
+
+    success: function( data ) {
+      display_list(data);
+      if(data.Movies.length>0) {
+        display_movie_info(data.Movies[0].IMDBID);
+      }
+      display_map(data.Scenes)
+    }
+  });
+}
+
+function display_list(data) {
+  $("#movielist").empty().append('<h2>Movies</h2>')
+  $.each(data.Movies, function(i, movie) {
+    $("#movielist").append(movie_item(movie))
+  });
+  $("#scenelist").empty().append('<h2>Scenes</h2>')
+  $.each(data.Scenes, function(i, scene) {
+    $("#scenelist").append(scene_item(scene))
+  });
+}
+
+function movie_item(movie) {
+  return '<br /><button id="movieitem" onclick="display_movie_info(\'' + movie.IMDBID + '\')">' + 
+          movie.Title +
+          '</button><br /><br />'
+}
+function scene_item(scene) {
+  return '<br /><button id="sceneitem" onclick="display_movie_info(\'' + scene.IMDBID + '\')">' + 
+         scene.Name +
+         '</button><br /><br />'
+}
+
+function display_movie_info(id) {
+  $.ajax({
+    url: "http://localhost:8080/movies/" + id,
+    jsonp: "callback",
+    dataType: "jsonp",
+
+    success: function( movie ) {
+      $("#movieposter")
+        .empty()
+        .append('<img id="poster" src="' + movie.Poster + '">')
+
+      $("#movieinfo")
+        .empty()
+        .append(movie_info(movie))
+    }
+  });
+}
+
+function movie_info(movie) {
+  return  'Title: ' + movie.Title + '<br />' +
+          'Release: ' + movie.Released + '<br />' +
+          'Runtime: ' + movie.Runtime + '<br />' +
+          'Director: ' + movie.Director + '<br />' +
+          'Writer: ' + movie.Writer + '<br />' +
+          'Actors: ' + movie.Actors + '<br />' +
+          'Plot: ' + movie.Plot + '<br />'
+}
+
+function display_scenes_near(lat, lng) {
+  $.ajax({
+    url: "http://localhost:8080/near?lat=" + lat + "&lng=" + lng,
+    jsonp: "callback",
+    dataType: "jsonp",
+
+    success: function( scenes ) {
+      display_map(scenes)
+    }
+  });
+}
+
+
+function display_map(scenes) {
+  map = new GMaps({
+    div: '#map',
+    lat: scenes[0].Lat,
+    lng: scenes[0].Lng,
+    click: function(e) {
+      display_scenes_near(e.latLng.A, e.latLng.F);
+    }
+  });
+
+  $.each(scenes, function(i, scene) {
+    map.addMarker({
+      lat: scene.Lat,
+      lng: scene.Lng,
+      infoWindow: {
+        content: '<p>' + scene.Name + '</p>'
+      },
+      click: function(e) {
+        display_movie_info(scene.IMDBID)
+      }
+    });
+  });
+}
+
+
+
+map = new GMaps({
+  div: '#map',
+  lat: -12.043333,
+  lng: -77.028333
+});
+
+</script>
+
+</body>
+</html>
