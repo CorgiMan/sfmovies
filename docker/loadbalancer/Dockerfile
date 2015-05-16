@@ -6,7 +6,7 @@ RUN \
   add-apt-repository -y ppa:nginx/stable && \
   apt-get install -y nginx && \
   apt-get install -y nano && \
-  apt-get isntall -y curl && \
+  apt-get install -y curl && \
   curl https://raw.githubusercontent.com/CorgiMan/sfmovies/master/loadbalancer/nginx.conf > /home/nginx.conf && \
   rm -rf /var/lib/apt/lists/* && \
   #echo "\ndaemon off;" >> /etc/nginx/nginx.conf && \
