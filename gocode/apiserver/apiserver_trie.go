@@ -4,7 +4,7 @@ import (
 	"strings"
 	"unicode"
 
-	"github.com/CorgiMan/sfmovies"
+	"github.com/CorgiMan/sfmovies/gocode"
 )
 
 type TrieResults struct {

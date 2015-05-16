@@ -16,11 +16,13 @@ I used docker ...
 ### loadbalancer
 nginx dockerfile hosted on dockerhub didn't work for my so I made one. I run it as a daemon and keep bash open so that I can reload config file changes without being disconnected for a moment.
 
+    
+
+
 ### api server
 usually lifetime of 24 hours ...
 
 ### mongodb
-docker run -d -p 27017:27017 -name mongodb mongo
 
 ### monitor / data update server
 
@@ -37,3 +39,24 @@ Could use a quad tree for the search, but with only ~1200 points-of-interrest we
 ## Front End
 Small front end for testing and as a prove of concept. The front end uses the ?callback parameter so that the api server will return jsonp. This is necessary when requesting data from a different domain than the domain that hosts the front end. Although the front end is hosted in the same domain as the api servers, you can easily check that it works outside this domain by downloading the front end and opening the index.html with your browser.
 
+
+
+### installation
+    git clone https://github.com/CorgiMan/sfmovies.git
+    
+    docker build -t sfmovies/nginx ./sfmovies/docker/loadbalancer
+    docker build -t sfmovies/apiserver ./sfmovies/docker/apiserver
+    docker build -t sfmovies/managerserver ./sfmovies/docker/managerserver
+    
+    docker run -dit -p 80:80 sfmovies/nginx
+
+    docker run -d -p 27017:27017 -name mongodb mongo
+    
+    docker run -d -p 12100:80 sfmovies/managerserver
+
+    docker run -d -p 12001:80 sfmovies/apiserver
+    docker run -d -p 12002:80 sfmovies/apiserver
+    docker run -d -p 12003:80 sfmovies/apiserver
+
+
+    

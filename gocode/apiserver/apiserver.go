@@ -11,7 +11,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/CorgiMan/sfmovies"
+	"github.com/CorgiMan/sfmovies/gocode"
 )
 
 type Status struct {

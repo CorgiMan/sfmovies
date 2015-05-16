@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"log"
 
-	"github.com/CorgiMan/sfmovies"
+	"github.com/CorgiMan/sfmovies/gocode"
 )
 
 func main() {

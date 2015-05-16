@@ -12,7 +12,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/CorgiMan/sfmovies"
+	"github.com/CorgiMan/sfmovies/gocode"
 )
 
 // geocoding key in config file
