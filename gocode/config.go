@@ -7,7 +7,7 @@ const (
 	GeocodingKey       = "AIzaSyA8Px3Nesn6PsDhA0DIppHX16OEDT85WfA"
 	GeocodingURL       = "https://maps.googleapis.com/maps/api/geocode/json?address="
 	GeocodingURLSuffix = ",+San+Francisco,+CA&key=" + GeocodingKey
-	MongoURL           = "infty.nl"
+	MongoURL           = "localhost"
 	HostName           = "http://infty.nl:12000"
 
 	// APIserver constants
