@@ -5,7 +5,7 @@ import (
 	"flag"
 	"fmt"
 	"io"
-	"math/rand"
+	"log"
 	"net/http"
 	"strconv"
 	"strings"
@@ -15,10 +15,9 @@ import (
 )
 
 type Status struct {
-	Machine      int
+	APIVersion   string
 	RunningSince time.Time
-	DataVersion  string
-	Running      bool
+	DataVersion  time.Time
 }
 
 var port = flag.String("port", "8080", "port that program listens on")
@@ -47,13 +46,14 @@ func init() {
 	var err error
 	ad, err = sfmovies.GetLatestAPIData()
 	if err != nil {
-		fmt.Println(err)
+		log.Fatal(err)
 	}
-	rand.Seed(time.Now().UTC().UnixNano())
-	status.Machine = rand.Int()
+	if ad == nil {
+		log.Fatal(NewError("No API data received from mongodb"))
+	}
+	status.APIVersion = sfmovies.APIVersion
 	status.RunningSince = time.Now()
-	status.DataVersion = "1"
-	status.Running = true
+	status.DataVersion = ad.Time
 
 	trie = CreateTrie(ad)
 }

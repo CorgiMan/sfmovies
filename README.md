@@ -42,21 +42,22 @@ Small front end for testing and as a prove of concept. The front end uses the ?c
 
 
 ### installation
+If you want to test the system on a single follow the commands below. The configuration file docker/loadbalancer/nginx.conf specifies ports 12001, 12002 and 12003 for load balancing. If you want to run more api server nodes you need to attach to the nginx container, add the adress of the new api server to the /home/nginx.conf and reload the config file with the nginx -s reload command.
+
     git clone https://github.com/CorgiMan/sfmovies.git
     
+    ip=$(ifconfig eth0 | grep 'inet addr:' | cut -d: -f2 | awk '{ print $1})
+
     docker build -t sfmovies/nginx ./sfmovies/docker/loadbalancer
     docker build -t sfmovies/apiserver ./sfmovies/docker/apiserver
-    docker build -t sfmovies/managerserver ./sfmovies/docker/managerserver
+    docker build -t sfmovies/manager ./sfmovies/docker/manager
     
     docker run -dit -p 80:80 sfmovies/nginx
 
     docker run -d -p 27017:27017 -name mongodb mongo
-    
-    docker run -d -p 12100:80 sfmovies/managerserver
+
+    docker run -d -p 12100:80 sfmovies/manager
 
     docker run -d -p 12001:80 sfmovies/apiserver
     docker run -d -p 12002:80 sfmovies/apiserver
     docker run -d -p 12003:80 sfmovies/apiserver
-
-
-    

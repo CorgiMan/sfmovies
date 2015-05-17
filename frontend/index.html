@@ -47,10 +47,12 @@
 
 <script>
 
+url = "http://infty.nl:12000/"
+
 $( "#autocomplete" ).autocomplete({
   source:  function(request, response) {
     $.ajax({
-      url: "http://localhost:8080/complete",
+      url: url+"complete",
       jsonp: "callback",
       dataType: "jsonp",
       data: {
@@ -71,7 +73,7 @@ form.addEventListener("submit", function(e) {
 
 function display_search_results(q) {
   $.ajax({
-    url: "http://localhost:8080/search?q=" + q,
+    url: url + "search?q=" + q,
     jsonp: "callback",
     dataType: "jsonp",
 
@@ -109,7 +111,7 @@ function scene_item(scene) {
 
 function display_movie_info(id) {
   $.ajax({
-    url: "http://localhost:8080/movies/" + id,
+    url: url + "movies/" + id,
     jsonp: "callback",
     dataType: "jsonp",
 
@@ -137,7 +139,7 @@ function movie_info(movie) {
 
 function display_scenes_near(lat, lng) {
   $.ajax({
-    url: "http://localhost:8080/near?lat=" + lat + "&lng=" + lng,
+    url: url + "near?lat=" + lat + "&lng=" + lng,
     jsonp: "callback",
     dataType: "jsonp",
 

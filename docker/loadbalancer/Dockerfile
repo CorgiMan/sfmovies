@@ -7,7 +7,7 @@ RUN \
   apt-get install -y nginx && \
   apt-get install -y nano && \
   apt-get install -y curl && \
-  curl https://raw.githubusercontent.com/CorgiMan/sfmovies/master/loadbalancer/nginx.conf > /home/nginx.conf && \
+  curl https://raw.githubusercontent.com/CorgiMan/sfmovies/master/docker/loadbalancer/nginx.conf > /home/nginx.conf && \
   rm -rf /var/lib/apt/lists/* && \
   #echo "\ndaemon off;" >> /etc/nginx/nginx.conf && \
   chown -R www-data:www-data /var/lib/nginx 
@@ -22,9 +22,3 @@ CMD nginx -c /home/nginx.conf && \
     /bin/bash
     
 EXPOSE 80
-
-
-# docker build -t sfmovies/nginx $GOPATH/src/github.com/sfmovies/loadbalancer
-# docker run -dit -p 80:80 sfmovies/nginx
-
-# docker run -dit -p 80:80 -v //c/Users/Wieger/Desktop/sfmovies/loadbalancer:/home/ sfmovies/nginx
