@@ -57,7 +57,7 @@ func NewAPIData() *APIData {
 }
 
 func GetLatestAPIData() (*APIData, error) {
-	session, err := mgo.Dial(MongoUser + MongoURL)
+	session, err := mgo.Dial(MongoURL)
 	if err != nil {
 		return nil, err
 	}
@@ -74,7 +74,7 @@ func GetLatestAPIData() (*APIData, error) {
 }
 
 func StoreAPIData(ad *APIData) error {
-	session, err := mgo.Dial(MongoUser + MongoURL)
+	session, err := mgo.Dial(MongoURL)
 	if err != nil {
 		return err
 	}
