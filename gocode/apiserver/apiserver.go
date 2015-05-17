@@ -2,6 +2,7 @@ package main
 
 import (
 	"encoding/json"
+	"errors"
 	"flag"
 	"fmt"
 	"io"
@@ -49,7 +50,7 @@ func init() {
 		log.Fatal(err)
 	}
 	if ad == nil {
-		log.Fatal(NewError("No API data received from mongodb"))
+		log.Fatal(errors.New("No API data received from mongodb"))
 	}
 	status.APIVersion = sfmovies.APIVersion
 	status.RunningSince = time.Now()
