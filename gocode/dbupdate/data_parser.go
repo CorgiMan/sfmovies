@@ -37,7 +37,7 @@ func ParseRows(r *csv.Reader) (*sfmovies.APIData, error) {
 		return nil, err
 	}
 
-	for i:=0; i<10; i++ {
+	for {
 		fields, err := r.Read()
 		if err != nil {
 			break
