@@ -61,7 +61,7 @@ The manager updates the dataset every night at 4 o' clock and monitors the API s
 ## API Server Implementation (Go)
 On initialization, the program fetches the latest API data from MongoDB. The program uses go's build-in web server to handle the requests. 
 
-For the search and auto-complete requests we use a trie. 
+For the search and auto-complete requests I've implemented a trie. 
 
 We could use a quad tree for the location based searches, but with only ~1200 points-of-interest we don't gain much from a quad tree approach. I have chosen for simplicity instead of a very small gain. 
 
