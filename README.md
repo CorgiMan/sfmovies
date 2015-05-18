@@ -76,7 +76,7 @@ Just a day before the deadline I started hosting the front end at `corgiman.inft
 Happy to see that this works just before the deadline of this challenge I must place a few remarks. In production you would not want to use a reverse proxy because IMDB might block the server ip. We could cache the images with Nginx or store them in MongoDB. There are not a lot of movies recorded in San Fransisco so we could just download and store all the movie posters we need. Another solution is to use the OMDB poster API for which you receive a key upon donation.
 
 
-## Installation
+## Installation and Configuration
 If you want to test the system on a single machine follow the commands below. The configuration file `docker/loadbalancer/nginx.conf` specifies to which addresses nginx balances it's load. You also need to also add them to `/manager/api_servers` so the manager can monitor them and perform rolling restarts after the database updates. Also make sure that MongoDB URL in `gocode/config.go` is configured to the machine that hosts the MongoDB container. 
 
 Note: I limited the amount of rows the service scans from the source table, because the Google Geo-encoding API limits the amount of request to 2500 per day. This is enough for our needs but if everybody installs the system we might run into some problems.
