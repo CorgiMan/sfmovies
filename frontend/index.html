@@ -119,7 +119,7 @@ function display_movie_info(id) {
     success: function( movie ) {
       $("#movieposter")
         .empty()
-        .append('<img id="poster" src="' + movie.Poster + '">')
+        .append('<img id="poster" src="http://corgiman.infty.nl:12080' + movie.Poster.substr(24) + '">')
 
       $("#movieinfo")
         .empty()

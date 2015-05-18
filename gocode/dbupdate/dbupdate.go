@@ -1,3 +1,5 @@
+// Updates the database with the latest API Data. This should be run once a day to keep the database up to date.
+// Fetches the source table, consults OMDB and Google Geo-Encoding API, and stores data in MongoDB
 package main
 
 import (
@@ -22,14 +24,9 @@ func main() {
 	}
 
 	sfmovies.StoreAPIData(apidata)
-
-	ad2, err := sfmovies.GetLatestAPIData()
-	if err != nil {
-		log.Fatal(err)
-	}
-	fmt.Println(ad2.Time)
 }
 
+// Fetches source table
 func GetAndParseAPIData() (*sfmovies.APIData, error) {
 	f, err := http.Get(sfmovies.TableURL)
 	if err != nil {
@@ -40,6 +37,8 @@ func GetAndParseAPIData() (*sfmovies.APIData, error) {
 	return ad, err
 }
 
+// For each row/scene in the source table we add it to the APIData.Scenes,
+// if we encounter a new movie we store it in APIData.Movies.
 func ParseRows(r *csv.Reader) (*sfmovies.APIData, error) {
 	ad := sfmovies.NewAPIData()
 
@@ -50,9 +49,15 @@ func ParseRows(r *csv.Reader) (*sfmovies.APIData, error) {
 		return nil, err
 	}
 
-	for {
+	fmt.Println("Parsing...")
+	// 30 is an arbitrary limit set to not exhaust API key (in production set to endless)
+	for i := 0; i < 30; i++ {
+		if i%100 == 99 {
+			fmt.Println(i+1, "done")
+		}
 		fields, err := r.Read()
 		if err != nil {
+			// No more lines in source table
 			break
 		}
 
@@ -61,10 +66,13 @@ func ParseRows(r *csv.Reader) (*sfmovies.APIData, error) {
 			log.Println(err)
 			continue
 		}
+
+		// check if movie is new
 		if _, ok := ad.Movies[movie.IMDBID]; !ok {
 			ad.Movies[movie.IMDBID] = movie
 		}
 
+		// calculate a new scene id by hashing
 		hasher := fnv.New32()
 		bts, err := json.Marshal(scene)
 		if err != nil {
@@ -79,16 +87,18 @@ func ParseRows(r *csv.Reader) (*sfmovies.APIData, error) {
 		hash := fmt.Sprintf("%x", hasher.Sum32())
 		ad.Scenes[hash] = scene
 	}
+	fmt.Println("Done parsing")
 	ad.Time = time.Now()
 
 	return ad, nil
 }
 
+// Finds movie and location information from the fields in a table.
 func ParseRow(record []string) (*sfmovies.Movie, *sfmovies.Scene, error) {
 	movie := new(sfmovies.Movie)
 	scene := new(sfmovies.Scene)
 
-	if len(record) < 2 {
+	if len(record) < 3 {
 		return movie, scene, errors.New("Not enough record fields in " + strings.Join(record, " "))
 	}
 
@@ -103,16 +113,24 @@ func ParseRow(record []string) (*sfmovies.Movie, *sfmovies.Scene, error) {
 		return movie, scene, err
 	}
 	location.Name = loc
-
 	scene = &sfmovies.Scene{movie.IMDBID, location}
 
 	return movie, scene, nil
 }
 
+// Consults Google Geo-Encoding API to find the coords of the location name somewhere near San Francisco.
 func GeoEncoding(location string) (*sfmovies.Location, error) {
 	location = strings.Replace(location, " ", "+", -1)
-	r, _ := http.Get(sfmovies.GeocodingURL + location + sfmovies.GeocodingURLSuffix)
-	jsonbts, _ := ioutil.ReadAll(r.Body)
+	location = strings.Replace(location, "&", "", -1)
+	r, err := http.Get(sfmovies.GeocodingURL + location + sfmovies.GeocodingURLSuffix)
+	for err != nil {
+		return nil, err
+	}
+
+	jsonbts, err := ioutil.ReadAll(r.Body)
+	if err != nil {
+		return nil, err
+	}
 
 	response := struct {
 		Results []struct {
@@ -122,7 +140,11 @@ func GeoEncoding(location string) (*sfmovies.Location, error) {
 		} `json: results`
 	}{}
 
-	_ = json.Unmarshal(jsonbts, &response)
+	err = json.Unmarshal(jsonbts, &response)
+	if err != nil {
+		fmt.Println(string(jsonbts))
+		return nil, err
+	}
 	rs := response.Results
 	for _, r := range rs {
 		if r.Geometry.Location.IsInBounds() {
@@ -132,6 +154,7 @@ func GeoEncoding(location string) (*sfmovies.Location, error) {
 	return nil, errors.New("No geo encoding available for " + location)
 }
 
+// Consults OMDB API to get the movie info.
 func GetOMDBMovieInfo(title string) (*sfmovies.Movie, error) {
 	mi := new(sfmovies.Movie)
 	title = strings.Replace(title, " ", "+", -1)

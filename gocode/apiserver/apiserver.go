@@ -1,71 +1,65 @@
+// Web server that handles requests for the API service
+// API handles auto-complete, search and location based queries.
 package main
 
 import (
 	"encoding/json"
 	"errors"
 	"flag"
-	"fmt"
 	"io"
 	"log"
 	"net/http"
 	"strconv"
-	"strings"
 	"time"
 
 	"github.com/CorgiMan/sfmovies/gocode"
 )
 
+// listens on port 80 by default
+var port = flag.String("port", "80", "port that program listens on")
+
+// Data used by API server
+var (
+	appData *sfmovies.APIData
+	trie    *TrieNode
+	status  Status
+)
+
+// The status of an API server. This is used when "/status" is requested
 type Status struct {
 	APIVersion   string
 	RunningSince time.Time
 	DataVersion  time.Time
 }
 
+// API servers errors are served by encoding this struct to JSON
 type Error struct {
 	Error string
 }
 
-var (
-	port   = flag.String("port", "80", "port that program listens on")
-	ad     *sfmovies.APIData
-	trie   *TrieNode
-	status Status
-
-	usage = strings.Replace(fmt.Sprintf(
-		`{
-		  "api_description": "San Francisco Movies Api %s. Location and movie info of films recorded in San Francisco",
-		  "api_examples": {
-		    "{{.}}/status":                     "the status of the api server that handled the request",
-		    "{{.}}/movies/tt0028216":           "movie info of the specified IMDB ID",
-		    "{{.}}/complete?term=franc":        "auto complete results for the specified term parameter",
-		    "{{.}}/search?q=francisco":         "searches for movie title, film location, release year, director, production company, distributer, writer and actors",
-		    "{{.}}/near?lat=37.76&lng=-122.39": "searches for film locations near the presented gps coordinates"
-		    "{{.}}/?callback=XXX":              "use the callback parameter on any request to return JSONP in stead of just JSON"
-		  }
-		}`, sfmovies.APIVersion), "{{.}}", sfmovies.HostName, -1)
-)
-
+// Download the latest APIData from MongoDB, calculate the search trie and determine status of the server.
 func init() {
 	flag.Parse()
 
 	var err error
-	ad, err = sfmovies.GetLatestAPIData()
+	appData, err = sfmovies.GetLatestAPIData()
 	if err != nil {
 		log.Fatal(err)
 	}
-	if ad == nil {
+	if appData == nil {
 		log.Fatal(errors.New("No API data received from mongodb"))
 	}
 	status = Status{}
 	status.APIVersion = sfmovies.APIVersion
 	status.RunningSince = time.Now()
-	status.DataVersion = ad.Time
+	status.DataVersion = appData.Time
 
-	trie = CreateTrie(ad)
+	trie = CreateTrie(appData)
 }
 
+// Sets up the webserver on a port specified by the --port flag
 func main() {
-	// root handles near, search and complete queries as well as api description
+	// root handles near, search and complete queries as well as API description
 	http.HandleFunc("/", jsonpHandler(rootHandler))
 	http.HandleFunc("/movies/", jsonpHandler(moviesHandler))
 	http.HandleFunc("/status", jsonpHandler(statusHandler))
@@ -75,6 +69,7 @@ func main() {
 	}
 }
 
+// Handles near, search, complete and root (usage) queries
 func rootHandler(w http.ResponseWriter, r *http.Request) {
 	switch r.URL.Path {
 	case "/near":
@@ -84,13 +79,14 @@ func rootHandler(w http.ResponseWriter, r *http.Request) {
 	case "/complete":
 		completeHandler(w, r)
 	case "/":
-		_, err := io.WriteString(w, usage)
+		_, err := io.WriteString(w, sfmovies.Usage)
 		if err != nil {
 			http.Error(w, err.Error(), http.StatusInternalServerError)
 		}
 	}
 }
 
+// Encodes an object into JSON and writes to the response writer
 func writeResult(w http.ResponseWriter, v interface{}) {
 	bts, err1 := json.MarshalIndent(v, "", "  ")
 	_, err2 := w.Write(bts)
@@ -99,45 +95,50 @@ func writeResult(w http.ResponseWriter, v interface{}) {
 	}
 }
 
+// Writes the status of the API server
 func statusHandler(w http.ResponseWriter, r *http.Request) {
 	writeResult(w, status)
 }
 
+// Handles queries for a specific IMDB movie ID.
 func moviesHandler(w http.ResponseWriter, r *http.Request) {
 	imdbid := r.URL.Path[len("/movies/"):]
-	if movie, ok := ad.Movies[imdbid]; ok {
+	if movie, ok := appData.Movies[imdbid]; ok {
 		writeResult(w, movie)
 	} else {
 		writeResult(w, Error{"Recource not found"})
 	}
 }
 
+// Handles auto-complete queries.
 func completeHandler(w http.ResponseWriter, r *http.Request) {
 	q := r.FormValue("term")
 	result := trie.GetFrom(q, sfmovies.AutoCompleteQuerySize)
 	writeResult(w, result)
 }
 
+// Handles queries that search for a complete word.
 func searchHandler(w http.ResponseWriter, r *http.Request) {
 	q := r.FormValue("q")
-	if result := trie.Get(ad, q); result != nil {
+	if result := trie.Get(appData, q); result != nil {
 		writeResult(w, result)
 	} else {
 		writeResult(w, Error{"Recource not found"})
 	}
 }
 
+// Handles near queries. Returns the closest NearQuerySize points-of-interest.
 func nearHandler(w http.ResponseWriter, r *http.Request) {
 	lat, err1 := strconv.ParseFloat(r.FormValue("lat"), 64)
 	lng, err2 := strconv.ParseFloat(r.FormValue("lng"), 64)
 	if err1 != nil || err2 != nil {
-		http.Error(w, "failed to parse lat lng parameters", http.StatusInternalServerError)
+		http.Error(w, "failed to parse lat and lng parameters", http.StatusInternalServerError)
 		return
 	}
 	loc := sfmovies.Location{"", lat, lng}
 	ds := make([]float64, 0)
 	scs := make([]*sfmovies.Scene, 0)
-	for _, scene := range ad.Scenes {
+	for _, scene := range appData.Scenes {
 		ds = append(ds, loc.Distance(scene.Location))
 		scs = append(scs, scene)
 	}
@@ -145,11 +146,14 @@ func nearHandler(w http.ResponseWriter, r *http.Request) {
 	// select closest element NearQuerySize times
 	result := make([]*sfmovies.Scene, 0)
 	for i := 0; i < sfmovies.NearQuerySize; i++ {
+		// select nearest element
 		ix := minix(ds)
 		if ix == -1 {
 			break
 		}
 		result = append(result, scs[ix])
+
+		// remove it from the array so that the next closest element will be found next time
 		ds[ix] = ds[len(ds)-1]
 		scs[ix] = scs[len(scs)-1]
 		ds = ds[:len(ds)-1]
@@ -159,6 +163,7 @@ func nearHandler(w http.ResponseWriter, r *http.Request) {
 	writeResult(w, result)
 }
 
+// Returns the index of the smallest element in a.
 func minix(a []float64) int {
 	if len(a) == 0 {
 		return -1
@@ -174,7 +179,7 @@ func minix(a []float64) int {
 
 type Handler func(http.ResponseWriter, *http.Request)
 
-// wraps around a handler and adds JSONP padding if the callback parameter is set
+// Wraps around all other handlers and adds JSONP padding only if the callback parameter is set.
 func jsonpHandler(fn Handler) Handler {
 	return func(w http.ResponseWriter, r *http.Request) {
 		callback := r.FormValue("callback")
@@ -189,6 +194,5 @@ func jsonpHandler(fn Handler) Handler {
 		} else {
 			fn(w, r)
 		}
-
 	}
 }
