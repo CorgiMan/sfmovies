@@ -71,8 +71,11 @@ Happy to see that this works just before the deadline of this challenge I must p
 
 
 ## Installation
-If you want to test the system on a single machine follow the commands below. The configuration file docker/loadbalancer/nginx.conf specifies ports 12001, 12002 and 12003 for load balancing. If you want to run more API server nodes you need to attach to the Nginx container, add the address of the new API server to the /home/nginx.conf and reload the config file with the Nginx -s reload command. You also need to also add them to /manager/api_servers. I limited the amount of rows the service scans from the source table, because the Google Geo-encoding API limits the amount of request to 2500 per day. This is enough for our needs but if everybody installs the system we might run into some problems.
+If you want to test the system on a single machine follow the commands below. The configuration file `docker/loadbalancer/nginx.conf` specifies to which addresses nginx balances it's load. You also need to also add them to /manager/api_servers so the manager can monitor them and perform rolling restarts after the database updates. Also make sure that MongoDB URL in `gocode/config.go` is configured to the machine that hosts the MongoDB container. 
 
+Note: I limited the amount of rows the service scans from the source table, because the Google Geo-encoding API limits the amount of request to 2500 per day. This is enough for our needs but if everybody installs the system we might run into some problems.
+
+When using boot2docker vm (192.168.59.103) we can build by executing:
     git clone https://github.com/CorgiMan/sfmovies.git
     
     docker build -t sfmovies/nginx ./sfmovies/docker/loadbalancer

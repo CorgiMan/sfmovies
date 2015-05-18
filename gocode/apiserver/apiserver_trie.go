@@ -88,6 +88,7 @@ type SearchResults struct {
 
 // Traverse the trie with str and lists the scenes stored at this node.
 // From these scenes a list of movies is composed which is also part of the result.
+// Used by search handler.
 func (t *TrieNode) Get(ad *sfmovies.APIData, str string) *SearchResults {
 	scenes := t.recursiveGet(CleanString(str))
 	if scenes == nil {
@@ -124,6 +125,7 @@ func (t *TrieNode) recursiveGet(str string) []*sfmovies.Scene {
 }
 
 // Returns a list of words in the try starting with str.
+// Used by auto-complete handler.
 func (t *TrieNode) GetFrom(str string, amount int) []string {
 	str = CleanString(str)
 	return t.recursiveGetFrom(str, amount)
@@ -178,8 +180,8 @@ func (t *TrieNode) BFS(r *[]string, amount int) {
 
 // Constructs the string leading to this node by traversing the parent nodes
 func (t *TrieNode) String() string {
-	if t.prev == nil || t.prev.prev == nil {
-		return string(t.letter)
+	if t.prev == nil {
+		return ""
 	} else {
 		return t.prev.String() + string(t.letter)
 	}
