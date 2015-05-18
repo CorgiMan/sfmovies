@@ -17,9 +17,9 @@ All the code included in this repository except for some files in the front end 
 The API handles auto-complete, search and location based requests. The service can also be queried for specific movies by providing the IMDB movie ID.
 
 - [corgiman.infty.nl/status](http://corgiman.infty.nl/status) The status of the API server that handled the request
-- [corgiman.infty.nl/movies/tt0028216](http://corgiman.infty.nl/movies/imdb_id/tt0028216) Movie info of the specified IMDB id
+- [corgiman.infty.nl/movies/tt0028216](http://corgiman.infty.nl/movies/tt0028216) Movie info of the specified IMDB ID
 - [corgiman.infty.nl/complete?term=franc](http://corgiman.infty.nl/complete?term=franc) Auto-complete the term parameter
-- [corgiman.infty.nl/search?q=francisco](http://corgiman.infty.nl/search?term=francisco) Searches for movie titles, film locations, release year, directors, production companies, distributors, writers and actors
+- [corgiman.infty.nl/search?q=francisco](http://corgiman.infty.nl/search?q=francisco) Searches for movie titles, film locations, release year, directors, production companies, distributors, writers and actors
 - [corgiman.infty.nl/near?lat=37.76&lng=-122.39](http://corgiman.infty.nl/near?lat=37.76&lng=-122.39) Search for film locations near the presented gps coordinates
 
 Use the callback parameter (?callback=XXX) on any request to return JSONP instead of just JSON.
