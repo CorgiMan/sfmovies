@@ -16,7 +16,7 @@
 <h2>Uber San Francisco Movie Challange Api Demonstration</h2>
 <div>
   <form id="from">
-    search: <input name="textbox" id="autocomplete">
+    search: <input name="textbox" id="autocomplete"> (auto-complete and search demo)
   </form>
 </div> 
 
@@ -25,6 +25,7 @@
 <div id="bar1">
   <div id="left">
     <div id="map"> </div>
+    <div id="mapdemo"> <b>Click on the map to send a near request on the clicked gps coordinates</b> </div>
   </div>
   
   <div id="right">
@@ -47,7 +48,7 @@
 
 <script>
 
-url = "http://infty.nl:12000/"
+url = "http://localhost:8080/"
 
 $( "#autocomplete" ).autocomplete({
   source:  function(request, response) {
@@ -155,6 +156,7 @@ function display_map(scenes) {
     div: '#map',
     lat: scenes[0].Lat,
     lng: scenes[0].Lng,
+    zoom: map.getZoom(),
     click: function(e) {
       display_scenes_near(e.latLng.A, e.latLng.F);
     }
@@ -178,8 +180,12 @@ function display_map(scenes) {
 
 map = new GMaps({
   div: '#map',
-  lat: -12.043333,
-  lng: -77.028333
+  lat: 37.7587,
+  lng: -122.4474,
+  zoom: 12,
+  click: function(e) {
+    display_scenes_near(e.latLng.A, e.latLng.F);
+  }
 });
 
 </script>

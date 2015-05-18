@@ -23,6 +23,11 @@ func (l1 *Location) Distance(l2 *Location) float64 {
 	return math.Sqrt(dX*dX + dY*dY)
 }
 
+func (loc *Location) IsInBounds() bool {
+	return (MinLat <= loc.Lat && loc.Lat <= MaxLat) &&
+		(MinLng <= loc.Lng && loc.Lng <= MaxLng)
+}
+
 type Movie struct {
 	Title    string
 	Year     string
@@ -39,7 +44,7 @@ type Movie struct {
 }
 
 type Scene struct {
-	IMDBID string "werkt dit?"
+	IMDBID string
 	*Location
 }
 
@@ -88,32 +93,3 @@ func StoreAPIData(ad *APIData) error {
 
 	return nil
 }
-
-// func ReadFromDisc(filename string) (*APIData, error) {
-// 	ad := NewAPIData()
-// 	f, err := os.Open(filename)
-// 	if err != nil {
-// 		return nil, err
-// 	}
-// 	dec := json.NewDecoder(f)
-// 	err = dec.Decode(ad)
-// 	if err != nil {
-// 		return nil, err
-// 	}
-// 	return ad, nil
-// }
-
-// func (ad *APIData) WriteToDisc(filename string) error {
-// 	f, err := os.Create(filename)
-// 	if err != nil {
-// 		return err
-// 	}
-// 	enc := json.NewEncoder(f)
-// 	err = enc.Encode(ad)
-// 	if err != nil {
-// 		fmt.Println(err)
-// 		return err
-// 	}
-// 	f.Close()
-// 	return nil
-// }

@@ -21,26 +21,29 @@ type Status struct {
 	DataVersion  time.Time
 }
 
-var port = flag.String("port", "8080", "port that program listens on")
-var machine = flag.String("machine", "1", "port that program listens on")
+type Error struct {
+	Error string
+}
 
-var ad *sfmovies.APIData
-var trie *TrieNode
-var status = Status{}
+var (
+	port   = flag.String("port", "80", "port that program listens on")
+	ad     *sfmovies.APIData
+	trie   *TrieNode
+	status Status
 
-var usage = strings.Replace(
-	`{
-  "api_description": "sf movies api. Location and movie info of movies recorded in San Francisco",
-  "api_examples": {
-    "{{.}}/status":               "returns the status of the api server that handled the request",
-    "{{.}}/movies/imdb_id/XXX":       "movie info",
-    "{{.}}/scenes/scene_id/XXX":      "movie info",
-    "{{.}}/complete?term=XXX":    "Auto complete results for query",
-    "{{.}}/search?q=XXX":         "Search for movie title, film location, release year, director, production company, distributer, writer and actors",
-    "{{.}}/near?lat=XXX&lng=XXX": "Search for film locations near the presented gps coordinates"
-    "?callback=XXX":							"Use the callback parameter on any request to return jsonp in stead of just json"
-  }
-}`, "{{.}}", sfmovies.HostName, -1)
+	usage = strings.Replace(fmt.Sprintf(
+		`{
+		  "api_description": "San Francisco Movies Api %s. Location and movie info of films recorded in San Francisco",
+		  "api_examples": {
+		    "{{.}}/status":                     "the status of the api server that handled the request",
+		    "{{.}}/movies/tt0028216":           "movie info of the specified IMDB ID",
+		    "{{.}}/complete?term=franc":        "auto complete results for the specified term parameter",
+		    "{{.}}/search?q=francisco":         "searches for movie title, film location, release year, director, production company, distributer, writer and actors",
+		    "{{.}}/near?lat=37.76&lng=-122.39": "searches for film locations near the presented gps coordinates"
+		    "{{.}}/?callback=XXX":              "use the callback parameter on any request to return JSONP in stead of just JSON"
+		  }
+		}`, sfmovies.APIVersion), "{{.}}", sfmovies.HostName, -1)
+)
 
 func init() {
 	flag.Parse()
@@ -53,6 +56,7 @@ func init() {
 	if ad == nil {
 		log.Fatal(errors.New("No API data received from mongodb"))
 	}
+	status = Status{}
 	status.APIVersion = sfmovies.APIVersion
 	status.RunningSince = time.Now()
 	status.DataVersion = ad.Time
@@ -60,63 +64,88 @@ func init() {
 	trie = CreateTrie(ad)
 }
 
-//TODO: Cache movies and scenes
+func main() {
+	// root handles near, search and complete queries as well as api description
+	http.HandleFunc("/", jsonpHandler(rootHandler))
+	http.HandleFunc("/movies/", jsonpHandler(moviesHandler))
+	http.HandleFunc("/status", jsonpHandler(statusHandler))
+	err := http.ListenAndServe(":"+*port, nil)
+	if err != nil {
+		log.Fatal(err)
+	}
+}
+
+func rootHandler(w http.ResponseWriter, r *http.Request) {
+	switch r.URL.Path {
+	case "/near":
+		nearHandler(w, r)
+	case "/search":
+		searchHandler(w, r)
+	case "/complete":
+		completeHandler(w, r)
+	case "/":
+		_, err := io.WriteString(w, usage)
+		if err != nil {
+			http.Error(w, err.Error(), http.StatusInternalServerError)
+		}
+	}
+}
+
+func writeResult(w http.ResponseWriter, v interface{}) {
+	bts, err1 := json.MarshalIndent(v, "", "  ")
+	_, err2 := w.Write(bts)
+	if err1 != nil || err2 != nil {
+		http.Error(w, "failed to marshal and write json", http.StatusInternalServerError)
+	}
+}
+
+func statusHandler(w http.ResponseWriter, r *http.Request) {
+	writeResult(w, status)
+}
 
 func moviesHandler(w http.ResponseWriter, r *http.Request) {
 	imdbid := r.URL.Path[len("/movies/"):]
-	movie, ok := ad.Movies[imdbid]
-	if !ok {
-		http.NotFound(w, r)
-		return
+	if movie, ok := ad.Movies[imdbid]; ok {
+		writeResult(w, movie)
+	} else {
+		writeResult(w, Error{"Recource not found"})
 	}
-	enc := NewEncoder(w)
-	err := enc.Encode(movie)
-	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
-	}
-	// bts, err := json.Marshal(movie)
-	// if err != nil {
-	// 	http.Error(w, err.Error(), http.StatusInternalServerError)
-	// }
-	// w.Write(bts)
 }
 
-func scenesHandler(w http.ResponseWriter, r *http.Request) {
-	sceneid := r.URL.Path[len("/scenes/"):]
-	scene, ok := ad.Scenes[sceneid]
-	if !ok {
-		http.NotFound(w, r)
-		return
-	}
-	enc := NewEncoder(w)
-	err := enc.Encode(scene)
-	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
+func completeHandler(w http.ResponseWriter, r *http.Request) {
+	q := r.FormValue("term")
+	result := trie.GetFrom(q, sfmovies.AutoCompleteQuerySize)
+	writeResult(w, result)
+}
+
+func searchHandler(w http.ResponseWriter, r *http.Request) {
+	q := r.FormValue("q")
+	if result := trie.Get(ad, q); result != nil {
+		writeResult(w, result)
+	} else {
+		writeResult(w, Error{"Recource not found"})
 	}
 }
 
 func nearHandler(w http.ResponseWriter, r *http.Request) {
-	lat, err := strconv.ParseFloat(r.FormValue("lat"), 64)
-	lng, err := strconv.ParseFloat(r.FormValue("lng"), 64)
-	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
+	lat, err1 := strconv.ParseFloat(r.FormValue("lat"), 64)
+	lng, err2 := strconv.ParseFloat(r.FormValue("lng"), 64)
+	if err1 != nil || err2 != nil {
+		http.Error(w, "failed to parse lat lng parameters", http.StatusInternalServerError)
 		return
 	}
-	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
-		return
-	}
-	loc := sfmovies.Location{"query", lat, lng}
+	loc := sfmovies.Location{"", lat, lng}
 	ds := make([]float64, 0)
 	scs := make([]*sfmovies.Scene, 0)
 	for _, scene := range ad.Scenes {
 		ds = append(ds, loc.Distance(scene.Location))
 		scs = append(scs, scene)
 	}
+
+	// select closest element NearQuerySize times
 	result := make([]*sfmovies.Scene, 0)
-	// select the minimum distance, then remove them from arrays
 	for i := 0; i < sfmovies.NearQuerySize; i++ {
-		ix := mini(ds)
+		ix := minix(ds)
 		if ix == -1 {
 			break
 		}
@@ -127,14 +156,10 @@ func nearHandler(w http.ResponseWriter, r *http.Request) {
 		scs = scs[:len(scs)-1]
 	}
 
-	enc := NewEncoder(w)
-	err = enc.Encode(result)
-	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
-	}
+	writeResult(w, result)
 }
 
-func mini(a []float64) int {
+func minix(a []float64) int {
 	if len(a) == 0 {
 		return -1
 	}
@@ -149,103 +174,21 @@ func mini(a []float64) int {
 
 type Handler func(http.ResponseWriter, *http.Request)
 
-func callbackHandler(fn Handler) Handler {
+// wraps around a handler and adds JSONP padding if the callback parameter is set
+func jsonpHandler(fn Handler) Handler {
 	return func(w http.ResponseWriter, r *http.Request) {
 		callback := r.FormValue("callback")
 		if callback != "" {
 			w.Header().Add("Content-Type", "application/javascript")
-			w.Write([]byte(callback + "("))
+			_, err1 := w.Write([]byte(callback + "("))
+			fn(w, r)
+			_, err2 := w.Write([]byte(");"))
+			if err1 != nil || err2 != nil {
+				http.Error(w, "failed to write JSONP padding", http.StatusInternalServerError)
+			}
+		} else {
+			fn(w, r)
 		}
-		fn(w, r)
-		if callback != "" {
-			w.Write([]byte(");"))
-		}
-	}
-}
 
-func searchHandler(w http.ResponseWriter, r *http.Request) {
-	q := r.FormValue("q")
-	// split q and intersect results
-	result := trie.Get(q)
-	if result == nil {
-		result = new(TrieResults)
-	}
-	enc := NewEncoder(w)
-	err := enc.Encode(result)
-	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
-	}
-}
-func completeHandler(w http.ResponseWriter, r *http.Request) {
-	q := r.FormValue("term")
-	results := trie.GetFrom(q, sfmovies.AutoCompleteQuerySize)
-	enc := NewEncoder(w)
-	err := enc.Encode(results)
-	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
-	}
-}
-func statusHandler(w http.ResponseWriter, r *http.Request) {
-	enc := NewEncoder(w)
-	err := enc.Encode(status)
-	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
-	}
-}
-func rootHandler(w http.ResponseWriter, r *http.Request) {
-	if strings.HasPrefix(r.URL.String(), "/near") {
-		nearHandler(w, r)
-		return
-	}
-	if strings.HasPrefix(r.URL.String(), "/search") {
-		searchHandler(w, r)
-		return
-	}
-	if strings.HasPrefix(r.URL.String(), "/complete") {
-		completeHandler(w, r)
-		return
-	}
-
-	// bts, err := json.MarshalIndent(usage, "", "  ")
-	// if err != nil {
-	// 	http.Error(w, err.Error(), http.StatusInternalServerError)
-	// 	return
-	// }
-	_, err := io.WriteString(w, usage)
-
-	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
-	}
-}
-
-type Encoder struct {
-	w io.Writer
-}
-
-func NewEncoder(w io.Writer) *Encoder {
-	return &Encoder{w}
-}
-
-func (e Encoder) Encode(v interface{}) error {
-	bts, err := json.MarshalIndent(v, "", "  ")
-	if err != nil {
-		return err
-	}
-	_, err = e.w.Write(bts)
-	if err != nil {
-		return err
-	}
-	return nil
-}
-
-func main() {
-	// root handles near, search and complete queries as well as api description
-	http.HandleFunc("/", callbackHandler(rootHandler))
-	http.HandleFunc("/movies/", callbackHandler(moviesHandler))
-	http.HandleFunc("/scenes/", callbackHandler(scenesHandler))
-	http.HandleFunc("/status", callbackHandler(statusHandler))
-	err := http.ListenAndServe(":"+*port, nil)
-	if err != nil {
-		fmt.Println(err)
 	}
 }

@@ -4,9 +4,10 @@
 [Uber San Francisco Movies Challenge](https://github.com/uber/coding-challenge-tools/blob/master/coding_challenge.md):
 "Create a service that shows on a map where movies have been filmed in San Francisco. The user should be able to filter the view using auto-completion search."
 
+[Data Source](https://data.sfgov.org/Arts-Culture-and-Recreation-/Film-Locations-in-San-Francisco/yitu-d5am)
 
-## The San Francisco Movies API
-I have chosen for the technical track and only provide a very basic front end at [corgiman.infty.nl:12080](http://corgiman.infty.nl:12080). I have created a RESTful JSON API service that handles auto-complete, search and location based requests. The API is located at [corgiman.infty.nl](http://corgiman.infty.nl/). The service uses [Google's Geo-encoding API](https://developers.google.com/maps/documentation/geocoding/) for translating location names in gps coordinates and [The Open Movie Database API](http://www.omdbapi.com/) for movie info.
+## [The San Francisco Movies API](http://corgiman.infty.nl/)
+I have chosen for the technical track and only provide a very basic [**front end**](http://corgiman.infty.nl:12080) at [corgiman.infty.nl:12080](http://corgiman.infty.nl:12080). I have created a RESTful JSON API service that handles auto-complete, search and location based requests. The API is located at [corgiman.infty.nl](http://corgiman.infty.nl/). The service uses [Google's Geo-encoding API](https://developers.google.com/maps/documentation/geocoding/) for translating location names in gps coordinates and [The Open Movie Database API](http://www.omdbapi.com/) for movie info.
 
 Goals: We want our service to be always available, reliable and blazingly fast. 
 
@@ -15,10 +16,10 @@ All the code included in this repository except for some files in the front end 
 ### API Description
 The API handles auto-complete, search and location based request. The API can also be queried for specific movies by providing the IMDB movie id.
 
-- [corgiman.infty.nl/status](http://corgiman.infty.nl/status) returns the status of the API server that handled the request
-- [corgiman.infty.nl/movies/tt0028216](http://corgiman.infty.nl/movies/imdb_id/tt0028216) returns the movie info of the specified IMDB id
-- [corgiman.infty.nl/complete?term=franc](http://corgiman.infty.nl/complete?term=franc) auto complete the term parameter
-- [corgiman.infty.nl/search?q=francisco](http://corgiman.infty.nl/search?term=francisco) searches for movie titles, film locations, release year, directors, production companies, distributors, writers and actors
+- [corgiman.infty.nl/status](http://corgiman.infty.nl/status) The status of the API server that handled the request
+- [corgiman.infty.nl/movies/tt0028216](http://corgiman.infty.nl/movies/imdb_id/tt0028216) Movie info of the specified IMDB id
+- [corgiman.infty.nl/complete?term=franc](http://corgiman.infty.nl/complete?term=franc) Auto-complete the term parameter
+- [corgiman.infty.nl/search?q=francisco](http://corgiman.infty.nl/search?term=francisco) Searches for movie titles, film locations, release year, directors, production companies, distributors, writers and actors
 - [corgiman.infty.nl/near?lat=37.76&lng=-122.39](http://corgiman.infty.nl/near?lat=37.76&lng=-122.39) Search for film locations near the presented gps coordinates
 
 Use the callback parameter (?callback=XXX) on any request to return JSON instead of just JSON.
@@ -32,7 +33,7 @@ We can deploy a load balancer to distribute the potentially high amounts of traf
 
 With this design our goals of performance, high availability and reliability are met.
 - Performance: Because the API servers store their data in memory they are extremely fast. 
-- High availability and reliability: If one or a few of the API servers crash the load can be easily handled by the rest of them. The crashed servers are restarted by a monitoring script running on the manager node. If the database fails we can still serve data because the API servers store the data in memory. We have enough time to restart the database. 
+- High availability and reliability: If one or a few of the API servers crashes, the load can be easily handled by the rest of them. The crashed servers are restarted by a monitoring script running on the manager node. If the database fails we can still serve data because the API servers store the data in memory and only access the database on initialization.
 
 The rest of this chapter discusses some details of the implementation.
 
@@ -87,3 +88,11 @@ If you want to test the system on a single machine follow the commands below. Th
     docker run -d -p 12001:80 sfmovies/APIserver
     docker run -d -p 12002:80 sfmovies/APIserver
     docker run -d -p 12003:80 sfmovies/APIserver
+
+### Improvements
+don't proxy imdb
+make ?search more versatile 
+autocomplete to return entire titles, actors instead of just a word
+smarter location lookup (not all locations are geo encodable)
+don't use windows' book to docker but use linux so that we can make use of the volumes
+finish processes gracefully.
