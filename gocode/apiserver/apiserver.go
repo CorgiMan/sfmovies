@@ -33,11 +33,12 @@ var usage = strings.Replace(
   "api_description": "sf movies api. Location and movie info of movies recorded in San Francisco",
   "api_examples": {
     "{{.}}/status":               "returns the status of the api server that handled the request",
-    "{{.}}/movies/imdb_id":       "movie info",
-    "{{.}}/scenes/scene_id":      "movie info",
-    "{{.}}/complete?term=###":    "Auto complete results for query",
-    "{{.}}/search?q=###":         "Search for movie title, film location, release year, director, production company, distributer, writer and actors",
-    "{{.}}/near?lat=###&lng=###": "Search for film locations near the presented gps coordinates"
+    "{{.}}/movies/imdb_id/XXX":       "movie info",
+    "{{.}}/scenes/scene_id/XXX":      "movie info",
+    "{{.}}/complete?term=XXX":    "Auto complete results for query",
+    "{{.}}/search?q=XXX":         "Search for movie title, film location, release year, director, production company, distributer, writer and actors",
+    "{{.}}/near?lat=XXX&lng=XXX": "Search for film locations near the presented gps coordinates"
+    "?callback=XXX":							"Use the callback parameter on any request to return jsonp in stead of just json"
   }
 }`, "{{.}}", sfmovies.HostName, -1)
 

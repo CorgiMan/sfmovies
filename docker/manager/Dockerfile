@@ -11,13 +11,10 @@ RUN apt-get update && \
     apt-get install -y ssh && \
     ssh-keygen -t rsa -f /root/.ssh/id_rsa -P ""
 
-
-
 CMD echo "install this pub key in all the apiserver nodes (the server that hosts the containers)." && \
     cat /root/.ssh/id_rsa.pub && \
-    #cat apiservers | while read address; do ssh-copy-id docker@$ip; done && \
-    echo "* * * * * sh /home/manager/monitor.sh >> /home/log >&2" > /home/cron_jobs && \
-    echo "0 4 * * * sh /home/manager/updatedb.sh >> /home/log >&2" >> /home/cron_jobs && \
+    echo "* * * * * sh /home/manager/monitor.sh >> /home/log" > /home/cron_jobs && \
+    echo "0 4 * * * sh /home/manager/updatedb.sh >> /home/log" >> /home/cron_jobs && \
     crontab /home/cron_jobs && \
     cron && \
     /bin/bash
