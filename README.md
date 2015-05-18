@@ -90,9 +90,9 @@ If you want to test the system on a single machine follow the commands below. Th
     docker run -d -p 12003:80 sfmovies/APIserver
 
 ### Improvements
-don't proxy imdb
-make ?search more versatile 
-autocomplete to return entire titles, actors instead of just a word
-smarter location lookup (not all locations are geo encodable)
-don't use windows' book to docker but use linux so that we can make use of the volumes
-finish processes gracefully.
+- Don't use windows' book2docker. Use linux instead so that we can make use of the volumes. I faced a lot of nasty problems with the boot2docker setup, but it was the only option that I had at the moment.
+- Finish processes gracefully. After the daily database update we perform a rolling restart. This could lead to some unfinished requests. With go, we can interrupt the SIGTERM signal that is send when docker restarts the containers, and gracefully finish the requests first.
+- As described in the Front End section, it is a bad idea to reverse proxy the IMDB movie posters. 
+- Search is not very versatile yet. An easy improvement to search would be to allow multiple words in the query and return the intersection of the individual results.
+- Auto-complete responds only with words. I'd like to change it so that if you search for "adam", the API auto-completes it to "Adam Sandler". To implement this the TrieNode should store a list of strings under every node. It takes some extra work because there are often multiple actors in a single string. e.g. "Adam Sandler, Drew Barrymore, Rob Schneider, Sean Astin" should be split into: ["Adam Sandler", "Drew Barrymore", "Rob Schneider", "Sean Astin"]
+

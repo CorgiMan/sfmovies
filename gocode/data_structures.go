@@ -1,6 +1,5 @@
 // This package defines the data structures that are used in the API webserver and the updating mechanism.
 // It also is responsible for communication with MongoDB
-
 package sfmovies
 
 import (
