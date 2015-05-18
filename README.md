@@ -22,7 +22,7 @@ The API handles auto-complete, search and location based request. The API can al
 - [corgiman.infty.nl/search?q=francisco](http://corgiman.infty.nl/search?term=francisco) Searches for movie titles, film locations, release year, directors, production companies, distributors, writers and actors
 - [corgiman.infty.nl/near?lat=37.76&lng=-122.39](http://corgiman.infty.nl/near?lat=37.76&lng=-122.39) Search for film locations near the presented gps coordinates
 
-Use the callback parameter (?callback=XXX) on any request to return JSON instead of just JSON.
+Use the callback parameter (?callback=XXX) on any request to return JSONP instead of just JSON.
 
 ## System Design
 There are a couple of possible directions our application could scale in: the size of the source table, frequent updates of the data and the amount of requests per second. 
