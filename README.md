@@ -77,7 +77,7 @@ Happy to see that this works just before the deadline of this challenge I must p
 
 
 ## Installation
-If you want to test the system on a single machine follow the commands below. The configuration file `docker/loadbalancer/nginx.conf` specifies to which addresses nginx balances it's load. You also need to also add them to /manager/api_servers so the manager can monitor them and perform rolling restarts after the database updates. Also make sure that MongoDB URL in `gocode/config.go` is configured to the machine that hosts the MongoDB container. 
+If you want to test the system on a single machine follow the commands below. The configuration file `docker/loadbalancer/nginx.conf` specifies to which addresses nginx balances it's load. You also need to also add them to `/manager/api_servers` so the manager can monitor them and perform rolling restarts after the database updates. Also make sure that MongoDB URL in `gocode/config.go` is configured to the machine that hosts the MongoDB container. 
 
 Note: I limited the amount of rows the service scans from the source table, because the Google Geo-encoding API limits the amount of request to 2500 per day. This is enough for our needs but if everybody installs the system we might run into some problems.
 
@@ -104,4 +104,3 @@ When using boot2docker vm (192.168.59.103) we can build by executing:
 - As described in the Front End section, it is a bad idea to reverse proxy the IMDB movie posters. 
 - Search is not very versatile yet. An easy improvement to search would be to allow multiple words in the query and return the intersection of the individual results.
 - Auto-complete responds only with words. I'd like to change it so that if you search for "adam", the API auto-completes it to "Adam Sandler". To implement this the TrieNode should store a list of strings under every node. It takes some extra work because there are often multiple actors in a single string. e.g. "Adam Sandler, Drew Barrymore, Rob Schneider, Sean Astin" should be split into: ["Adam Sandler", "Drew Barrymore", "Rob Schneider", "Sean Astin"]
-
