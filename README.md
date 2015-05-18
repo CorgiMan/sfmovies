@@ -65,7 +65,7 @@ For the search and auto-complete requests I've implemented a trie.
 
 We could use a quad tree for the location based searches, but with only ~1200 points-of-interest we don't gain much from a quad tree approach. I have chosen for simplicity instead of a very small gain. 
 
-All the handlers are wrapped in a callback handler that serves JSONP if the `?callback` parameter is set. JSONP is used when requesting data from a different domain than the domain that hosts the front end.
+All the handlers are wrapped in a callback handler that serves JSONP if the `?callback` parameter is set. JSONP is used with AJAX when requesting data from a different domain than the domain that hosts the front end.
 
 
 ## Front End
