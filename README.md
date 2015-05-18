@@ -14,7 +14,7 @@ Goals: We want our service to be always available, reliable and blazingly fast.
 All the code included in this repository except for some files in the front end are written by me. I did not write `frontend/gmaps.js` and the jQuery files.
 
 ### API Description
-The API handles auto-complete, search and location based requests. The service can also be queried for specific movies by providing the IMDB movie id.
+The API handles auto-complete, search and location based requests. The service can also be queried for specific movies by providing the IMDB movie ID.
 
 - [corgiman.infty.nl/status](http://corgiman.infty.nl/status) The status of the API server that handled the request
 - [corgiman.infty.nl/movies/tt0028216](http://corgiman.infty.nl/movies/imdb_id/tt0028216) Movie info of the specified IMDB id
