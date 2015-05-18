@@ -12,6 +12,3 @@ CMD /home/go/bin/apiserver --port 80
 
 EXPOSE 80
 
-# git clone https://github.com/CorgiMan/sfmovies.git
-# docker build -t sfmovies/apiserver ./sfmovies/docker/apiserver
-# docker run -d -p 12001:80 sfmovies/apiserver

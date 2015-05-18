@@ -7,9 +7,10 @@ RUN \
   apt-get install -y nginx && \
   apt-get install -y nano && \
   apt-get install -y curl && \
-  curl https://raw.githubusercontent.com/CorgiMan/sfmovies/master/docker/loadbalancer/nginx.conf > /home/nginx.conf && \
+  apt-get install -y git && \
+  cd /home && \
+  git clone https://github.com/CorgiMan/sfmovies.git && \
   rm -rf /var/lib/apt/lists/* && \
-  #echo "\ndaemon off;" >> /etc/nginx/nginx.conf && \
   chown -R www-data:www-data /var/lib/nginx 
 
 VOLUME ["/etc/nginx/sites-enabled", "/etc/nginx/certs", "/etc/nginx/conf.d", "/var/log/nginx", "/var/www/html"]
@@ -18,7 +19,7 @@ VOLUME ["/etc/nginx/sites-enabled", "/etc/nginx/certs", "/etc/nginx/conf.d", "/v
 # run nginx as a daemon and run bash in forground so that we can
 # change and reload the config file without losing trafic
 
-CMD nginx -c /home/nginx.conf && \
+CMD nginx -c /sfmovies/docker/loadbalancer/nginx.conf && \
     /bin/bash
     
 EXPOSE 80
