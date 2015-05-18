@@ -1,7 +1,7 @@
 # San Francisco Movies Challenge
 
 ## Challenge Description
-[Uber San Francisco Movies Challenge](https://github.com/uber/coding-challenge-tools/blob/master/coding_challenge.md):
+[Uber's San Francisco Movies Challenge](https://github.com/uber/coding-challenge-tools/blob/master/coding_challenge.md):
 "Create a service that shows on a map where movies have been filmed in San Francisco. The user should be able to filter the view using auto-completion search."
 
 [Data Source](https://data.sfgov.org/Arts-Culture-and-Recreation-/Film-Locations-in-San-Francisco/yitu-d5am)
