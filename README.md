@@ -59,7 +59,13 @@ The host that runs the API server containers needs to install the public ssh key
 The manager updates the dataset every night at 4 o' clock and monitors the API servers every minute with the use of cronjobs. After the dataset is updated, a rolling restart of all the API servers is performed by a shell script `docker/manager/rolling_restart.sh`. The monitoring is done by `docker/manager/monitor.sh`. These two scripts use a script for the restart of a single container `docker/manager/restart.sh`. To manage the nodes, the manager needs a list of ip:port pairs to the API server containers: `docker/manager/API_servers`.
 
 ## API Server Implementation (Go)
-On initialization, the program fetches the latest API data from MongoDB. The program uses go's build-in web server to handle the requests. For the search and auto-complete requests we use a trie. We could use a quad tree for the location based searches, but with only ~1200 points-of-interest we don't gain much from a quad tree approach. I have chosen for simplicity instead of a very small gain. All the handlers are wrapped in a callback handler that serves JSONP if the `?callback` parameter is set. JSONP is used when requesting data from a different domain than the domain that hosts the front end.
+On initialization, the program fetches the latest API data from MongoDB. The program uses go's build-in web server to handle the requests. 
+
+For the search and auto-complete requests we use a trie. 
+
+We could use a quad tree for the location based searches, but with only ~1200 points-of-interest we don't gain much from a quad tree approach. I have chosen for simplicity instead of a very small gain. 
+
+All the handlers are wrapped in a callback handler that serves JSONP if the `?callback` parameter is set. JSONP is used when requesting data from a different domain than the domain that hosts the front end.
 
 
 ## Front End
